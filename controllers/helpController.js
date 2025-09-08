@@ -27,7 +27,10 @@ exports.createHelpRequest = async (req, res) => {
       number_of_affected_people: parseInt(number_of_affected_people),
       location,
       contact,
-      createdAt: new Date()
+      assignedVolunteers: [],
+      status: 'active',
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
     
     const result = await db.collection('helpRequests').insertOne(newRequest);
@@ -66,6 +69,8 @@ exports.updateHelpRequest = async (req, res) => {
       updateData.number_of_affected_people = parseInt(updateData.number_of_affected_people);
     }
 
+    updateData.updatedAt = new Date();
+
     const result = await db.collection('helpRequests').updateOne(
       { _id: new ObjectId(id) },
       { $set: updateData }
@@ -82,6 +87,26 @@ exports.updateHelpRequest = async (req, res) => {
     res.status(200).json(updatedRequest);
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+};
+
+exports.getHelpRequestsByLocation = async (req, res) => {
+  try {
+    const db = getDB();
+    const { location } = req.params;
+    
+    if (!location) {
+      return res.status(400).json({ error: 'Location parameter is required' });
+    }
+
+    // Case-insensitive search for location
+    const helpRequests = await db.collection('helpRequests').find({
+      location: { $regex: location, $options: 'i' } // 'i' for case-insensitive
+    }).toArray();
+
+    res.status(200).json(helpRequests);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
 

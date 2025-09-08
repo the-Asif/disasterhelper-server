@@ -22,7 +22,6 @@ exports.registerVolunteer = async (req, res) => {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
-    // Check if email already exists
     const existingVolunteer = await db.collection('volunteers').findOne({ email });
     if (existingVolunteer) {
       return res.status(400).json({ error: 'Email already registered' });
@@ -33,8 +32,10 @@ exports.registerVolunteer = async (req, res) => {
       address,
       email,
       contact,
+      assignedTo: '',
+      status: 'active',
       registeredAt: new Date(),
-      status: 'active' // You can add more fields like skills, availability, etc.
+      updatedAt: new Date()
     };
     
     const result = await db.collection('volunteers').insertOne(newVolunteer);
@@ -69,6 +70,8 @@ exports.updateVolunteer = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
+    updateData.updatedAt = new Date();
+
     const result = await db.collection('volunteers').updateOne(
       { _id: new ObjectId(id) },
       { $set: updateData }
@@ -101,6 +104,64 @@ exports.deleteVolunteer = async (req, res) => {
     }
     
     res.status(200).json({ _id: req.params.id, deleted: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Assign volunteer to location
+exports.assignVolunteer = async (req, res) => {
+  try {
+    const db = getDB();
+    const { volunteerId, helpRequestId } = req.body;
+    
+    if (!volunteerId || !helpRequestId) {
+      return res.status(400).json({ error: 'Volunteer ID and Help Request ID are required' });
+    }
+
+    // Get volunteer and help request
+    const volunteer = await db.collection('volunteers').findOne({
+      _id: new ObjectId(volunteerId)
+    });
+
+    const helpRequest = await db.collection('helpRequests').findOne({
+      _id: new ObjectId(helpRequestId)
+    });
+
+    if (!volunteer || !helpRequest) {
+      return res.status(404).json({ error: 'Volunteer or Help Request not found' });
+    }
+
+    // Update volunteer
+    const volunteerUpdate = await db.collection('volunteers').updateOne(
+      { _id: new ObjectId(volunteerId) },
+      { 
+        $set: { 
+          assignedTo: helpRequest.location,
+          status: 'assigned',
+          updatedAt: new Date()
+        }
+      }
+    );
+
+    // Update help request
+    const helpRequestUpdate = await db.collection('helpRequests').updateOne(
+      { _id: new ObjectId(helpRequestId) },
+      { 
+        $push: { assignedVolunteers: volunteerId },
+        $set: { updatedAt: new Date() }
+      }
+    );
+
+    if (volunteerUpdate.matchedCount === 0 || helpRequestUpdate.matchedCount === 0) {
+      return res.status(404).json({ error: 'Failed to assign volunteer' });
+    }
+
+    res.status(200).json({ 
+      message: 'Volunteer assigned successfully',
+      volunteer: { ...volunteer, assignedTo: helpRequest.location },
+      helpRequest: { ...helpRequest, assignedVolunteers: [...(helpRequest.assignedVolunteers || []), volunteerId] }
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

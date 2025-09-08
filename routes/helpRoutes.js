@@ -5,13 +5,17 @@ const {
   createHelpRequest,
   getHelpRequest,
   updateHelpRequest,
-  deleteHelpRequest
+  deleteHelpRequest,
+  getHelpRequestsByLocation // Add this import
 } = require('../controllers/helpController');
 
 // CRUD Routes
 router.route('/')
   .get(getAllHelpRequests)
   .post(createHelpRequest);
+
+router.route('/location/:location') // Add this route
+  .get(getHelpRequestsByLocation);
 
 router.route('/:id')
   .get(getHelpRequest)

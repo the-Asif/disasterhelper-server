@@ -5,13 +5,17 @@ const {
   registerVolunteer,
   getVolunteer,
   updateVolunteer,
-  deleteVolunteer
+  deleteVolunteer,
+  assignVolunteer
 } = require('../controllers/volunteerController');
 
 // CRUD Routes
 router.route('/')
   .get(getAllVolunteers)
   .post(registerVolunteer);
+
+router.route('/assign')
+  .post(assignVolunteer);
 
 router.route('/:id')
   .get(getVolunteer)
