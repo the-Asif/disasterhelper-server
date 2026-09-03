@@ -1,5 +1,5 @@
 // middlewares/verifyToken.js
-import jwt from 'jsonwebtoken';
+const jwt = require('jsonwebtoken');
 
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -10,7 +10,7 @@ const verifyToken = (req, res, next) => {
 
   const token = authHeader.split(' ')[1];
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+  jwt.verify(token, process.env.JWT_SECRET || 'secret', (err, decoded) => {
     if (err) {
       return res.status(403).send({ message: 'forbidden access' });
     }
@@ -19,4 +19,5 @@ const verifyToken = (req, res, next) => {
   });
 };
 
-export default verifyToken;
+module.exports = verifyToken;
+

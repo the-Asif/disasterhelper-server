@@ -1,9 +1,7 @@
 // routes/auth.js
-import express from 'express';
-import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv';
-
-dotenv.config();
+const express = require('express');
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
 
 const router = express.Router();
 
@@ -15,8 +13,9 @@ router.post('/jwt', (req, res) => {
     return res.status(400).json({ message: 'User email required for JWT' });
   }
 
-  const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: '1h' });
+  const token = jwt.sign(user, process.env.JWT_SECRET || 'secret', { expiresIn: '1h' });
   res.json({ token });
 });
 
-export default router;
+module.exports = router;
+
